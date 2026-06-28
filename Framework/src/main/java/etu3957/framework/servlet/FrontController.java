@@ -1,4 +1,4 @@
-package etu4371.framework.servlet;
+package etu3957.framework.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -6,10 +6,10 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 
-import etu4371.framework.annotation.Url;
-import etu4371.framework.model.Mapping;
-import etu4371.framework.model.UrlMethode;
-import etu4371.framework.util.Utilitaire;
+import etu3957.framework.annotation.Url;
+import etu3957.framework.model.Mapping;
+import etu3957.framework.model.UrlMethode;
+import etu3957.framework.util.Utilitaire;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,7 +40,7 @@ public class FrontController extends HttpServlet {
                 String p = pack.trim();
                 System.out.println("[Framework] Package à scanner : '" + p + "'");
                 List<Class<?>> scanned = Utilitaire.scanPackageForAnnotation(p,
-                        etu4371.framework.annotation.Monannotation.class);
+                        etu3957.framework.annotation.Monannotation.class);
                 classes.addAll(scanned);
             }
             this.classesAnnotees = classes;
