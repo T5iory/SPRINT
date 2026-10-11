@@ -10,14 +10,16 @@ rm -rf "$BIN_DIR" framework.jar test/WEB-INF/classes "$TARGET_DIR"
 mkdir -p "$BIN_DIR" test/WEB-INF/classes
 
 # Compilation Framework & JAR
-javac -d "$BIN_DIR" -cp "$SERVLET_JAR" \
+javac -parameters -d "$BIN_DIR" -cp "$SERVLET_JAR:framework/lib/servlet-api.jar" \
     framework/src/itu/webdynamique/framework/*.java \
     framework/src/itu/webdynamique/framework/annotation/*.java \
     framework/src/itu/webdynamique/framework/util/*.java
 jar -cvf framework.jar -C "$BIN_DIR" .
 
 # Compilation Application Test
-javac -d test/WEB-INF/classes -cp "framework.jar:$SERVLET_JAR" test/src/itu/webdynamique/app/controller/*.java
+javac -parameters -d test/WEB-INF/classes -cp "framework.jar:$SERVLET_JAR:framework/lib/servlet-api.jar" \
+    test/src/itu/webdynamique/app/model/*.java \
+    test/src/itu/webdynamique/app/controller/*.java
 
 # Deploiement Tomcat
 mkdir -p "$TARGET_DIR/WEB-INF/lib" "$TARGET_DIR/WEB-INF/classes"

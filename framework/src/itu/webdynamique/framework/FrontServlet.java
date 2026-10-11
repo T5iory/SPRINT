@@ -75,10 +75,30 @@ public class FrontServlet extends HttpServlet {
 
             try {
                 Class<?> laClasse  = Class.forName(mapping.getClassName());
-                Object   instance  = laClasse.getDeclaredConstructor().newInstance();
-                Method   laMethode = laClasse.getDeclaredMethod(mapping.getMethodName());
+                // 1. Instanciation du contrôleur
+                Object instance = laClasse.getDeclaredConstructor().newInstance();
 
-                Object resultat = laMethode.invoke(instance);
+                // 2. Data binding sur les attributs du contrôleur (si le contrôleur a des champs)
+                itu.webdynamique.framework.util.DataBinder.bindControllerAttributes(instance, request);
+
+                // 3. Recherche de la méthode cible
+                Method laMethode = null;
+                for (Method m : laClasse.getDeclaredMethods()) {
+                    if (m.getName().equals(mapping.getMethodName())) {
+                        laMethode = m;
+                        break;
+                    }
+                }
+
+                if (laMethode == null) {
+                    throw new NoSuchMethodException("Methode " + mapping.getMethodName() + " non trouvee dans " + laClasse.getName());
+                }
+
+                // 4. Data binding sur les arguments de la méthode
+                Object[] args = itu.webdynamique.framework.util.DataBinder.resolveMethodArguments(laMethode, request);
+
+                // 5. Invocation
+                Object resultat = laMethode.invoke(instance, args);
 
                 if (resultat instanceof ModelAndView) {
                     ModelAndView mv = (ModelAndView) resultat;
