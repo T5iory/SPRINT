@@ -37,6 +37,22 @@
             border-radius: 4px;
             font-size: 12px;
         }
+        .file-info {
+            margin-top: 15px;
+            padding: 10px 15px;
+            background-color: #f8f9fa;
+            border-left: 3px solid #17a2b8;
+            border-radius: 4px;
+        }
+        .file-info h4 {
+            margin: 0 0 5px 0;
+            color: #333;
+        }
+        .file-info p {
+            margin: 3px 0;
+            color: #555;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -54,6 +70,25 @@
             <li><strong>Prénom :</strong> ${employe.prenom}</li>
             <li><strong>Salaire :</strong> ${employe.salaire}</li>
         </ul>
+
+        <!-- Sprint 8 : Affichage des fichiers uploadés -->
+        <c:if test="${employe.rectoCin != null}">
+            <div class="file-info">
+                <h4>Recto CIN</h4>
+                <p><strong>Fichier :</strong> ${employe.rectoCin.nom}.${employe.rectoCin.extension}</p>
+                <p><strong>Extension :</strong> ${employe.rectoCin.extension}</p>
+                <p><strong>Taille :</strong> ${employe.rectoCin.binaire != null ? employe.rectoCin.binaire.length : 0} octets</p>
+            </div>
+        </c:if>
+
+        <c:if test="${employe.versoCin != null}">
+            <div class="file-info">
+                <h4>Verso CIN</h4>
+                <p><strong>Fichier :</strong> ${employe.versoCin.nom}.${employe.versoCin.extension}</p>
+                <p><strong>Extension :</strong> ${employe.versoCin.extension}</p>
+                <p><strong>Taille :</strong> ${employe.versoCin.binaire != null ? employe.versoCin.binaire.length : 0} octets</p>
+            </div>
+        </c:if>
     </c:if>
 
     <p><a href="${pageContext.request.contextPath}/employe/form">Retour au formulaire</a></p>

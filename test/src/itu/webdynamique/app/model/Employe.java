@@ -1,10 +1,14 @@
 package itu.webdynamique.app.model;
 
+import itu.webdynamique.framework.MapFile;
+
 public class Employe {
     private int id;
     private String nom;
     private String prenom;
     private double salaire;
+    private MapFile rectoCin;
+    private MapFile versoCin;
 
     public Employe() {
     }
@@ -48,6 +52,22 @@ public class Employe {
         this.salaire = salaire;
     }
 
+    public MapFile getRectoCin() {
+        return rectoCin;
+    }
+
+    public void setRectoCin(MapFile rectoCin) {
+        this.rectoCin = rectoCin;
+    }
+
+    public MapFile getVersoCin() {
+        return versoCin;
+    }
+
+    public void setVersoCin(MapFile versoCin) {
+        this.versoCin = versoCin;
+    }
+
     @Override
     public String toString() {
         return "Employe{" +
@@ -55,6 +75,8 @@ public class Employe {
                 ", nom='" + nom + '\'' +
                 ", prenom='" + prenom + '\'' +
                 ", salaire=" + salaire +
+                ", rectoCin=" + rectoCin +
+                ", versoCin=" + versoCin +
                 '}';
     }
 }

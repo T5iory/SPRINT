@@ -1,5 +1,7 @@
 package itu.webdynamique.framework.util;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -10,19 +12,13 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.Map;
 
+import itu.webdynamique.framework.MapFile;
 import itu.webdynamique.framework.annotation.RequestParam;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.Part;
 
 public class DataBinder {
 
-    /**
-     * Résout les arguments d'une méthode de contrôleur à partir de la requête HTTP.
-     * Supporte :
-     * - HttpServletRequest
-     * - Paramètres annotés avec @RequestParam
-     * - Types simples (String, int, double, boolean, Date, etc.)
-     * - Objets / Formulaires (Binding automatique par setters ou champs)
-     */
     public static Object[] resolveMethodArguments(Method method, HttpServletRequest request) throws Exception {
         Parameter[] parameters = method.getParameters();
         Object[] args = new Object[parameters.length];
@@ -37,8 +33,10 @@ public class DataBinder {
                 String paramName = getParamName(param);
                 String rawValue = request.getParameter(paramName);
                 args[i] = convertSimpleType(rawValue, type);
+            } else if (type.equals(MapFile.class)) {
+                String paramName = getParamName(param);
+                args[i] = buildMapFile(paramName, request);
             } else {
-                // Objet complexe (Sprint 7 / 7bis)
                 String paramName = getParamName(param);
                 args[i] = bindObject(type, paramName, request);
             }
@@ -47,10 +45,6 @@ public class DataBinder {
         return args;
     }
 
-    /**
-     * Injection dans les champs/attributs d'un objet contrôleur lui-même
-     * si le contrôleur a des attributs correspondant aux paramètres de la requête.
-     */
     public static void bindControllerAttributes(Object controller, HttpServletRequest request) {
         if (controller == null || request == null) {
             return;
@@ -68,7 +62,6 @@ public class DataBinder {
                 } catch (Exception ignored) {
                 }
             } else if (!isSimpleType(field.getType()) && !field.getType().isPrimitive()) {
-                // Possibilité d'objet imbriqué dans le contrôleur (ex: controller.employe)
                 try {
                     Object boundObj = bindObject(field.getType(), field.getName(), request);
                     if (boundObj != null) {
@@ -80,10 +73,6 @@ public class DataBinder {
         }
     }
 
-    /**
-     * Instancie et remplit un objet (Model) à partir des paramètres HTTP.
-     * Accepte la notation préfixée (ex: "emp.nom", "employe.nom") ou directe ("nom").
-     */
     public static Object bindObject(Class<?> clazz, String prefix, HttpServletRequest request) throws Exception {
         Object instance = clazz.getDeclaredConstructor().newInstance();
         boolean hasAnyPropertySet = false;
@@ -95,11 +84,9 @@ public class DataBinder {
 
             if (isSimpleType(fieldType)) {
                 String rawVal = null;
-                // 1. Essai avec préfixe (ex: "emp.nom")
                 if (prefix != null && !prefix.isEmpty()) {
                     rawVal = request.getParameter(prefix + "." + fieldName);
                 }
-                // 2. Si non trouvé ou pas de préfixe, essai avec nom direct (ex: "nom")
                 if (rawVal == null) {
                     rawVal = request.getParameter(fieldName);
                 }
@@ -109,8 +96,25 @@ public class DataBinder {
                     setProperty(instance, fieldName, value);
                     hasAnyPropertySet = true;
                 }
+            } else if (fieldType.equals(MapFile.class)) {
+                String partName = fieldName;
+                if (prefix != null && !prefix.isEmpty()) {
+                    MapFile mf = buildMapFile(prefix + "." + fieldName, request);
+                    if (mf == null) {
+                        mf = buildMapFile(fieldName, request);
+                    }
+                    if (mf != null) {
+                        setProperty(instance, fieldName, mf);
+                        hasAnyPropertySet = true;
+                    }
+                } else {
+                    MapFile mf = buildMapFile(fieldName, request);
+                    if (mf != null) {
+                        setProperty(instance, fieldName, mf);
+                        hasAnyPropertySet = true;
+                    }
+                }
             } else {
-                // Objet imbriqué (ex: emp.departement.nom)
                 String subPrefix = (prefix != null && !prefix.isEmpty()) ? prefix + "." + fieldName : fieldName;
                 Object subObj = bindObject(fieldType, subPrefix, request);
                 if (subObj != null) {
@@ -123,16 +127,12 @@ public class DataBinder {
         return instance;
     }
 
-    /**
-     * Affecte une valeur à une propriété via son setter ou directement via réflexion sur le field.
-     */
     public static void setProperty(Object target, String propertyName, Object value) {
         if (target == null) return;
 
         String setterName = "set" + Character.toUpperCase(propertyName.charAt(0)) + propertyName.substring(1);
         Class<?> clazz = target.getClass();
 
-        // 1. Recherche et appel du setter
         for (Method m : clazz.getMethods()) {
             if (m.getName().equals(setterName) && m.getParameterCount() == 1) {
                 try {
@@ -143,7 +143,6 @@ public class DataBinder {
             }
         }
 
-        // 2. Si pas de setter public, setter via le champ privé
         try {
             Field field = clazz.getDeclaredField(propertyName);
             field.setAccessible(true);
@@ -152,9 +151,6 @@ public class DataBinder {
         }
     }
 
-    /**
-     * Récupère le nom du paramètre (via @RequestParam ou param.getName()).
-     */
     private static String getParamName(Parameter param) {
         if (param.isAnnotationPresent(RequestParam.class)) {
             RequestParam rp = param.getAnnotation(RequestParam.class);
@@ -265,5 +261,47 @@ public class DataBinder {
         }
 
         return val;
+    }
+
+    public static MapFile buildMapFile(String partName, HttpServletRequest request) {
+        try {
+            Part part = request.getPart(partName);
+            if (part == null || part.getSize() <= 0) {
+                return null;
+            }
+
+            String submittedFileName = part.getSubmittedFileName();
+            if (submittedFileName == null || submittedFileName.trim().isEmpty()) {
+                return null;
+            }
+
+            String nom = submittedFileName;
+            String extension = "";
+            int dotIndex = submittedFileName.lastIndexOf('.');
+            if (dotIndex >= 0) {
+                extension = submittedFileName.substring(dotIndex + 1);
+                nom = submittedFileName.substring(0, dotIndex);
+            }
+
+            byte[] binaire;
+            try (InputStream is = part.getInputStream();
+                 ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+                while ((bytesRead = is.read(buffer)) != -1) {
+                    bos.write(buffer, 0, bytesRead);
+                }
+                binaire = bos.toByteArray();
+            }
+
+            MapFile mapFile = new MapFile();
+            mapFile.setNom(nom);
+            mapFile.setExtension(extension);
+            mapFile.setBinaire(binaire);
+            return mapFile;
+
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
