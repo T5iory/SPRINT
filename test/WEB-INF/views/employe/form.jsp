@@ -37,6 +37,11 @@
             border-radius: 4px;
             box-sizing: border-box;
         }
+        input[type="file"] {
+            width: 100%;
+            padding: 6px 0;
+            box-sizing: border-box;
+        }
         .btn {
             background-color: #007bff;
             color: white;
@@ -49,6 +54,16 @@
         .btn:hover {
             background-color: #0056b3;
         }
+        .file-section {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        .file-section h3 {
+            margin-top: 0;
+            color: #555;
+            font-size: 15px;
+        }
     </style>
 </head>
 <body>
@@ -56,8 +71,8 @@
 <div class="container">
     <h2>Formulaire Employé (Test Binding)</h2>
 
-    <!-- Formulaire d'ajout ou mise à jour -->
-    <form action="${pageContext.request.contextPath}/employe/save" method="POST">
+    <!-- Sprint 8 : enctype multipart/form-data pour l'upload de fichiers -->
+    <form action="${pageContext.request.contextPath}/employe/save" method="POST" enctype="multipart/form-data">
         <div class="form-group">
             <label for="id">ID :</label>
             <input type="number" id="id" name="id" value="101" required />
@@ -76,6 +91,21 @@
         <div class="form-group">
             <label for="salaire">Salaire :</label>
             <input type="number" step="0.01" id="salaire" name="salaire" value="1500000.0" required />
+        </div>
+
+        <!-- Sprint 8 : Champs fichier pour CIN -->
+        <div class="file-section">
+            <h3>Pièces jointes - Carte d'identité</h3>
+
+            <div class="form-group">
+                <label for="rectoCin">Recto CIN :</label>
+                <input type="file" id="rectoCin" name="rectoCin" />
+            </div>
+
+            <div class="form-group">
+                <label for="versoCin">Verso CIN :</label>
+                <input type="file" id="versoCin" name="versoCin" />
+            </div>
         </div>
 
         <button type="submit" class="btn">Enregistrer (POST /employe/save)</button>
