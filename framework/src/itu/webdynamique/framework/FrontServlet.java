@@ -99,10 +99,30 @@ public class FrontServlet extends HttpServlet {
                 if (laMethode.isAnnotationPresent(AuthRequired.class)) {
                     HttpSession session = request.getSession(false);
                     AuthRequired authRequired = laMethode.getAnnotation(AuthRequired.class);
+
                     boolean isConnected = session != null && session.getAttribute(authRequired.value()) != null;
                     if (!isConnected) {
                         response.sendRedirect(request.getContextPath() + authRequired.redirect());
                         return;
+                    }
+
+                    if (authRequired.roles() != null && authRequired.roles().length > 0) {
+                        String roleAttributeName = authRequired.roleAttribute();
+                        Object sessionRoleObj = session.getAttribute(roleAttributeName);
+                        String sessionRole = sessionRoleObj == null ? null : String.valueOf(sessionRoleObj);
+
+                        boolean hasRole = false;
+                        for (String role : authRequired.roles()) {
+                            if (role != null && role.equalsIgnoreCase(sessionRole)) {
+                                hasRole = true;
+                                break;
+                            }
+                        }
+
+                        if (!hasRole) {
+                            response.sendRedirect(request.getContextPath() + "/forbidden");
+                            return;
+                        }
                     }
                 }
 

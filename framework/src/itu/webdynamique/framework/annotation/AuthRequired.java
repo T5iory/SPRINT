@@ -9,5 +9,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface AuthRequired {
     String value() default "user";
+    String roleAttribute() default "role";
+    String[] roles() default {};
     String redirect() default "/login";
 }
