@@ -14,7 +14,9 @@ import java.util.Map;
 
 import itu.webdynamique.framework.MapFile;
 import itu.webdynamique.framework.annotation.RequestParam;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.Part;
 
 public class DataBinder {
@@ -29,6 +31,10 @@ public class DataBinder {
 
             if (type.isAssignableFrom(HttpServletRequest.class)) {
                 args[i] = request;
+            } else if (type.isAssignableFrom(HttpSession.class)) {
+                args[i] = request.getSession();
+            } else if (type.isAssignableFrom(ServletContext.class)) {
+                args[i] = request.getServletContext();
             } else if (isSimpleType(type)) {
                 String paramName = getParamName(param);
                 String rawValue = request.getParameter(paramName);
