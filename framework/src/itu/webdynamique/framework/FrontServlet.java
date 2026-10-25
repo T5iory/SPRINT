@@ -14,6 +14,8 @@ import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import itu.webdynamique.framework.annotation.AuthRequired;
+import jakarta.servlet.http.HttpSession;
 
 @MultipartConfig
 public class FrontServlet extends HttpServlet {
@@ -77,13 +79,11 @@ public class FrontServlet extends HttpServlet {
 
             try {
                 Class<?> laClasse  = Class.forName(mapping.getClassName());
-                // 1. Instanciation du contrôleur
                 Object instance = laClasse.getDeclaredConstructor().newInstance();
 
-                // 2. Data binding sur les attributs du contrôleur (si le contrôleur a des champs)
+                // 1. Data binding sur les attributs du contrôleur (si le contrôleur a des champs)
                 itu.webdynamique.framework.util.DataBinder.bindControllerAttributes(instance, request);
 
-                // 3. Recherche de la méthode cible
                 Method laMethode = null;
                 for (Method m : laClasse.getDeclaredMethods()) {
                     if (m.getName().equals(mapping.getMethodName())) {
@@ -96,10 +96,20 @@ public class FrontServlet extends HttpServlet {
                     throw new NoSuchMethodException("Methode " + mapping.getMethodName() + " non trouvee dans " + laClasse.getName());
                 }
 
-                // 4. Data binding sur les arguments de la méthode
+                if (laMethode.isAnnotationPresent(AuthRequired.class)) {
+                    HttpSession session = request.getSession(false);
+                    AuthRequired authRequired = laMethode.getAnnotation(AuthRequired.class);
+                    boolean isConnected = session != null && session.getAttribute(authRequired.value()) != null;
+                    if (!isConnected) {
+                        response.sendRedirect(request.getContextPath() + authRequired.redirect());
+                        return;
+                    }
+                }
+
+                // 2. Data binding sur les arguments de la méthode
                 Object[] args = itu.webdynamique.framework.util.DataBinder.resolveMethodArguments(laMethode, request);
 
-                // 5. Invocation
+                // 3. Invocation
                 Object resultat = laMethode.invoke(instance, args);
 
                 if (resultat instanceof ModelAndView) {
